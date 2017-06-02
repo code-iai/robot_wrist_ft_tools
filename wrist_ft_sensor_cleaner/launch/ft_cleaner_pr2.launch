@@ -1,0 +1,14 @@
+<launch>
+  <include file="$(find ati_mini_40_driver)/launch/gravity.launch">
+  	<param name="start_link" value="base_link" />
+  	<param name="end_link" value="l_force_torque_link" />
+  	<param name="gravity_vector" value="[0,0,9.8]"/>
+  	<param name="urdf" value="/$(find ati_mini_40_driver)/../bags/robot.xml" />
+  </include>
+
+  <node name="ft_cleaner" pkg="ati_mini_40_driver" type="ft_cleaner.py" output="screen">
+  	<param name="dirty_topic" value="/ft/l_gripper_motor" />
+   	<param name="acceleration_topic" value="acceleration" />
+  	<param name="path_to_saved_params" value="$(find ati_mini_40_driver)/launch/params.yaml" />
+  </node>	
+</launch>

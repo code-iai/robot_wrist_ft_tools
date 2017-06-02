@@ -1,0 +1,14 @@
+<launch>
+  <include file="$(find wrist_ft_sensor_cleaner)/launch/gravity.launch">
+  	<param name="start_link" value="base_link" />
+  	<param name="end_link" value="_kms40_frame_out" />
+  	<param name="gravity_vector" value="[0,0,-9.8]"/>
+  	<param name="urdf" value="/$(find ur_description)/urdf/ur5_with_gripper.urdf" />
+  </include>
+
+  <node name="ft_cleaner" pkg="wrist_ft_sensor_cleaner" type="ft_cleaner.py" output="screen">
+  	<param name="ft_topic" value="/kms40/wrench" />
+   	<param name="acceleration_topic" value="acceleration" />
+  	<param name="path_to_saved_params" value="$(find wrist_ft_sensor_cleaner)/launch/params.yaml" />
+  </node>	
+</launch>
