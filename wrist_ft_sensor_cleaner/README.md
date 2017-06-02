@@ -27,7 +27,7 @@ Use
 
 for the pr2 sensor or 
 
-```ft_cleaner_ur5.launch```
+```roslaunch wrist_ft_sensor_cleaner ft_cleaner_ur5.launch```
 
 for the ur5.
 
@@ -41,7 +41,7 @@ for the ur5.
 ### Services
 * ```~/recalibration_start``` [OUT, std_srvs/Trigger]: starts the calibration mode
 * ```~/recalibration_stop``` [OUT, std_srvs/Trigger]: stops the calibration mode and saves the estimated parameters in ```$(param path_to_saved_params)```
-* ```~/update_offset``` [OUT, std_srvs/Trigger]: reestimates the force/torque offset from a single measurement, based on the assumption that the attached mass and center of mass have not changed
+* ```~/update_offset``` [OUT, std_srvs/Trigger]: reestimates the force/torque offset from a single measurement, based on the assumption that the attached mass and center of mass have not changed and saves the estimated parameters in ```$(param path_to_saved_params)```
 
 ### Topics
 * ```/joint_states``` [IN, sensor_msgs/JointState]: used to determin if the robot is in motion
