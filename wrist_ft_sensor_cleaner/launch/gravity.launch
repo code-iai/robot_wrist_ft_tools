@@ -1,11 +1,8 @@
 <launch>
   <node name="gravity_publisher" pkg="wrist_ft_sensor_cleaner" type="gravity_publisher.py" output="screen">
   	<param name="start_link" value="base_link" />
-  	<!-- <param name="end_link" value="l_force_torque_link" /> -->
-  	<param name="end_link" value="_kms40_frame_out" />
-  	<!-- <param name="gravity_vector" value="[0,0,9.8]"/> -->
-  	<param name="gravity_vector" value="[0,0,-9.8]"/>
-  	<!-- <param name="urdf" value="/$(find wrist_ft_sensor_cleaner)/../bags/robot.xml" /> -->
-  	<param name="urdf" value="/$(find ur_description)/urdf/ur5_with_gripper.urdf" />
+  	<param name="end_link" value="l_force_torque_link" />
+  	<param name="gravity_vector" value="[0,0,9.8]"/>
+  	<param name="urdf" value="/$(find wrist_ft_sensor_cleaner)/launch/fixed_pr2_robot.xml" />
   </node>	
 </launch>

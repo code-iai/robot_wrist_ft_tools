@@ -1,7 +1,0 @@
-<launch>
-
-  <param 
-    name="robot_description" 
-    textfile="$(find ati_mini_40_driver)/../bags/robot.xml"/>
-
-</launch>
