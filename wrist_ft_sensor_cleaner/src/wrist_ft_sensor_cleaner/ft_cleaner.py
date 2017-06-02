@@ -17,21 +17,23 @@ from wrist_ft_sensor_cleaner.msg._FTRecalibrationInfo import FTRecalibrationInfo
 class FTCleaner(object):
     def __init__(self, ft_topic='/ft/l_gripper_motor',
                  acceleration_topic='/acceleration',
+                 path_to_saved_params='params.yaml',
                  time_till_record=1.,
-                 online=True,
-                 path_to_saved_params='params.yaml'):
+                 not_moving_threshold=.2):
         """
         :param ft_topic: The name of the force/torque sensor topic.
         :type ft_topic: str, default '/ft/l_gripper_motor'
         :param time_till_record: The time waited from a movement stop until a measurement will be made in seconds.
         :type time_till_record: float, default 1.0
-        :param online: 
-        :type online: bool
+        :param not_moving_threshold: if the euclidean norm of the joint state velocity vector is above this value,
+                the robot is considered to be in motion.
+        :type not_moving_threshold: float
         :param path_to_saved_params: The path yaml file containing previously estimated values.
         :type path_to_saved_params: str, default ''
         """
         self.path_to_saved_params = path_to_saved_params
         self.time_till_record = time_till_record
+        self.not_moving_threshold = not_moving_threshold
         self.reset()
         self.joints_to_ft_ids = None
         self.time_of_last_acc_msg = rospy.Time(0, 0)
@@ -46,14 +48,13 @@ class FTCleaner(object):
         self.ft_clean_pub = Publisher("{}_clean".format(ft_topic), WrenchStamped, queue_size=100)
         self.ft_zeroed_pub = Publisher("{}_zeroed".format(ft_topic), WrenchStamped, queue_size=100)
         self.status_pub = Publisher("~status", FTRecalibrationInfo, queue_size=100)
-        if online:
-            self.ft_sub = Subscriber(ft_topic, WrenchStamped, self.ft_cb, queue_size=100)
-            self.joint_state_sub = rospy.Subscriber('joint_states', JointState, self.joint_state_cb, queue_size=100)
+        self.ft_sub = Subscriber(ft_topic, WrenchStamped, self.ft_cb, queue_size=100)
+        self.joint_state_sub = rospy.Subscriber('joint_states', JointState, self.joint_state_cb, queue_size=100)
         self.recalibrate_srv_start = rospy.Service('~recalibration_start', Trigger, self.start_calibration)
         self.recalibrate_srv_stop = rospy.Service('~recalibration_stop', Trigger, self.stop_calibration)
         self.recalibrate_srv_update_offset = rospy.Service('~update_offset', Trigger, self.update_offset_cb)
 
-        rospy.loginfo("ft cleaner for {} started".format(ft_topic))
+        rospy.loginfo("ft_cleaner for {} started".format(ft_topic))
 
     def acc_cb(self, data):
         self.time_of_last_acc_msg = data.header.stamp
@@ -146,6 +147,15 @@ class FTCleaner(object):
                                                                                     self.last_linear_acceleration[0]
         self.ft_zeroed_pub.publish(clean_ft)
 
+    def in_motion(self, js):
+        """
+        :param js: the robots joint state
+        :type js: JointState
+        :return: whether or not the robot is in motion
+        :rtype: bool
+        """
+        return np.linalg.norm(np.array(js.velocity)) > self.not_moving_threshold
+
     def joint_state_cb(self, data):
         """
         Adds a new measurement to the parameter estimator, if the sensor has not moved for a while.
@@ -153,7 +163,7 @@ class FTCleaner(object):
         :type data: JointState
         """
         if self.in_recalibration_mode:
-            if np.linalg.norm(np.array(data.velocity)) > .2 or self.last_movement == np.inf:
+            if self.in_motion(data) or self.last_movement == np.inf:
                 self.last_movement = data.header.stamp.to_sec()
                 self.recorded = False
 
@@ -175,7 +185,7 @@ class FTCleaner(object):
                 self.print_params()
                 self.pub_status(data.header)
                 self.recorded = True
-        elif self.update_offset and np.linalg.norm(np.array(data.velocity)) < .2:
+        elif self.update_offset and not self.in_motion(data):
             force_torque = np.array([self.last_ft.wrench.force.x,
                                      self.last_ft.wrench.force.y,
                                      self.last_ft.wrench.force.z,
@@ -341,7 +351,7 @@ class ParameterEstimator(object):
 if __name__ == '__main__':
     rospy.init_node("force_torque_cleaner")
     path_to_saved_params = rospy.get_param('~path_to_saved_params', default='params.yaml')
-    dirty_ft_topic = rospy.get_param('~ft_topic', default='/ft/l_gripper_motor')
+    ft_topic = rospy.get_param('~ft_topic', default='/ft/l_gripper_motor')
     acceleration_topic = rospy.get_param('~acceleration_topic', default='/acceleration')
-    ftc = FTCleaner(ft_topic=dirty_ft_topic, path_to_saved_params=path_to_saved_params)
+    ftc = FTCleaner(ft_topic=ft_topic, path_to_saved_params=path_to_saved_params)
     rospy.spin()

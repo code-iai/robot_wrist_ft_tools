@@ -100,7 +100,7 @@ class GravityPublisher(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node("gravity")
+    rospy.init_node("gravity_publisher")
     start_link = rospy.get_param('~start_link', default='base_link')
     end_link = rospy.get_param('~end_link', default='l_force_torque_link')
     gravity = rospy.get_param('~gravity_vector', default='[0,0,-9.8]')
