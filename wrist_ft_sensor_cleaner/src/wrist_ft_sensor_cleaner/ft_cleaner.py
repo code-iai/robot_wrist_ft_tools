@@ -193,7 +193,7 @@ class FTCleaner(object):
                                      self.last_ft.wrench.torque.y,
                                      self.last_ft.wrench.torque.z, ])
             self.offset[:3] = force_torque[:3] - self.last_linear_acceleration * self.m
-            self.offset[3:] = force_torque[3:] - np.dot(self.cm, self.last_linear_acceleration)
+            self.offset[3:] = force_torque[3:] - np.cross(self.cm, self.last_linear_acceleration)
             self.save_params(self.path_to_saved_params)
             self.print_params()
             self.pub_status(data.header, score=False)
