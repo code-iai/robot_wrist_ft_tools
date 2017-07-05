@@ -1,9 +1,9 @@
 <launch>
   <include file="$(find wrist_ft_sensor_cleaner)/launch/gravity.launch">
-  	<param name="start_link" value="base_link" />
-  	<param name="end_link" value="l_force_torque_link" />
-  	<param name="gravity_vector" value="[0,0,9.8]"/>
-  	<param name="urdf" value="/$(find wrist_ft_sensor_cleaner)/launch/fixed_pr2_robot.xml" />
+  	<arg name="start_link" value="base_link" />
+  	<arg name="end_link" value="l_force_torque_link" />
+  	<arg name="gravity_vector" value="[0,0,9.8]"/>
+  	<arg name="urdf" value="/$(find wrist_ft_sensor_cleaner)/launch/fixed_pr2_robot.xml" />
   </include>
 
   <node name="ft_cleaner" pkg="wrist_ft_sensor_cleaner" type="ft_cleaner.py" output="screen">
