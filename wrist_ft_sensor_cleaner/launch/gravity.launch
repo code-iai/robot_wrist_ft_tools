@@ -1,14 +1,23 @@
 <launch>
-
   <arg name="start_link" default="base_link" />
   <arg name="end_link" default="l_force_torque_link" />
+  <arg name="use_kdl" default="False" /> 
   <arg name="gravity_vector" default="[0,0,-9.8]"/>
-  <arg name="urdf" default="/$(find wrist_ft_sensor_cleaner)/launch/fixed_pr2_robot.xml" />
+  <arg name="urdf" default="" />
 
-  <node name="gravity_publisher" pkg="wrist_ft_sensor_cleaner" type="gravity_publisher.py" output="screen">
-  	<param name="start_link" value="$(arg start_link)" />
-  	<param name="end_link" value="$(arg end_link)" />
-  	<param name="gravity_vector" value="$(arg gravity_vector)"/>
-  	<param name="urdf" value="$(arg urdf)" />
-  </node>	
+  <group if="$(arg use_kdl)">
+    <node name="gravity_publisher" pkg="wrist_ft_sensor_cleaner" type="kdl_gravity_publisher.py" output="screen">
+      <param name="start_link" value="$(arg start_link)" />
+      <param name="end_link" value="$(arg end_link)" />
+      <param name="gravity_vector" value="$(arg gravity_vector)"/>
+      <param name="urdf" value="$(arg urdf)" />
+    </node> 
+  </group>
+  <group unless="$(arg use_kdl)">
+    <node name="gravity_publisher" pkg="wrist_ft_sensor_cleaner" type="tf_gravity_publisher.py" output="screen">
+    	<param name="fixed_frame" value="$(arg start_link)" />
+    	<param name="sensor_frame" value="$(arg end_link)" />
+    	<param name="gravity_vector" value="$(arg gravity_vector)"/>
+    </node>	
+  </group>
 </launch>

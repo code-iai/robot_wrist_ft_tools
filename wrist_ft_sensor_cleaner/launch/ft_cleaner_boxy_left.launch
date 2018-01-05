@@ -1,9 +1,9 @@
 <launch>
   <include file="$(find wrist_ft_sensor_cleaner)/launch/gravity.launch">
-  <arg name="start_link" value="base_link" />
-  <arg name="end_link" value="left_arm_kms40_frame_out" />
-  <arg name="gravity_vector" value="[0,0,-9.8]"/>
-  <arg name="urdf" value="" /> <!-- value empty gets it from param -->
+    <arg name="start_link" value="base_link" />
+    <arg name="end_link" value="left_arm_kms40_frame_out" />
+    <arg name="gravity_vector" value="[0,0,-9.8]"/>
+    <arg name="urdf" value="" /> <!-- value empty gets it from robot_description-->
   </include>
 
   <node name="ft_cleaner" pkg="wrist_ft_sensor_cleaner" type="ft_cleaner.py" output="screen">
