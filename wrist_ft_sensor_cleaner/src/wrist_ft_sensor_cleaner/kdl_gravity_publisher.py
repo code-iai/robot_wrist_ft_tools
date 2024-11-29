@@ -1,17 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import PyKDL
 import rospy
 from kdl_parser_py.urdf import treeFromFile, treeFromParam
-from rospy.topics import Publisher, Subscriber
-from sensor_msgs.msg._Imu import Imu
-from sensor_msgs.msg._JointState import JointState
+from sensor_msgs.msg import Imu, JointState
 
 
-class GravityPublisher(object):
-    def __init__(self, path_to_urdf=None, start_link='base_link', end_link='l_force_torque_link', gravity_vector=(0, 0, -9.8)):
+class GravityPublisher:
+    def __init__(self, path_to_urdf=None, start_link='base_link', end_link='l_force_torque_link',
+                 gravity_vector=(0, 0, -9.8)):
         """
-        :param path_to_urdf: The location of the robots urdf file. Will be loaded from the parameter server if None. 
+        :param path_to_urdf: The location of the robot's URDF file. Will be loaded from the parameter server if None.
         :type path_to_urdf: str or None
         :param start_link: The start link of a kinematic chain leading to the force/torque sensor. Should be a fixed link.
         :type start_link: str
@@ -27,18 +26,19 @@ class GravityPublisher(object):
         self.end_link = end_link
         self.gravity_vector = gravity_vector
 
-        if path_to_urdf is None or path_to_urdf is "":
+        if path_to_urdf is None or path_to_urdf == "":
             success, tree = treeFromParam('robot_description')
             if not success:
-                rospy.logerr('failed to load urdf from parameter server')
+                rospy.logerr('Failed to load URDF from parameter server')
             else:
-                rospy.loginfo('urdf loaded from parameter server')
+                rospy.loginfo('URDF loaded from parameter server')
         else:
             success, tree = treeFromFile(path_to_urdf)
             if not success:
-                rospy.logerr('failed to load urdf from {}'.format(path_to_urdf))
+                rospy.logerr(f'Failed to load URDF from {path_to_urdf}')
             else:
-                rospy.loginfo('urdf loaded from {}'.format(path_to_urdf))
+                rospy.loginfo(f'URDF loaded from {path_to_urdf}')
+
         self.chain = tree.getChain(self.start_link, self.end_link)
         self.joint_names = []
         for i in range(self.chain.getNrOfSegments()):
@@ -47,8 +47,8 @@ class GravityPublisher(object):
                 self.joint_names.append(str(joint.getName()))
         self.fksolver = PyKDL.ChainFkSolverPos_recursive(self.chain)
 
-        self.acceleration_pub = Publisher("acceleration", Imu, queue_size=100)
-        self.joint_state_sub = Subscriber('joint_states', JointState, self.joint_state_cb, queue_size=100)
+        self.acceleration_pub = rospy.Publisher("acceleration", Imu, queue_size=100)
+        self.joint_state_sub = rospy.Subscriber('joint_states', JointState, self.joint_state_cb, queue_size=100)
 
         rospy.loginfo("kdl gravity publisher started started")
 
@@ -56,7 +56,11 @@ class GravityPublisher(object):
         if self.joints_to_ft_ids is None:
             self.joints_to_ft_ids = []
             for joint_name in self.joint_names:
-                self.joints_to_ft_ids.append(data.name.index(joint_name))
+                if joint_name in data.name:
+                    self.joints_to_ft_ids.append(data.name.index(joint_name))
+                else:
+                    rospy.logerr(f"Joint '{joint_name}' not found in JointState message")
+                    return
 
         gravity, sensor_orientation = self.kinematic_gravity(data)
         imu = Imu()
@@ -79,8 +83,8 @@ class GravityPublisher(object):
         :rtype: PyKDL.JntArray
         """
         j = PyKDL.JntArray(len(joint_states))
-        for i in range(len(joint_states)):
-            j[i] = joint_states[i]
+        for i, state in enumerate(joint_states):
+            j[i] = state
         return j
 
     def kinematic_gravity(self, js):
@@ -106,5 +110,15 @@ if __name__ == '__main__':
     gravity = rospy.get_param('~gravity_vector', default='[0,0,-9.8]')
     urdf = rospy.get_param('~urdf', default=None)
 
-    gravity = GravityPublisher(path_to_urdf=urdf, start_link=start_link, end_link=end_link, gravity_vector=eval(gravity))
+    # Validate and parse gravity vector
+    try:
+        gravity_vector = eval(gravity)
+        if not isinstance(gravity_vector, (list, tuple)) or len(gravity_vector) != 3:
+            raise ValueError("Gravity vector must be a list or tuple of three floats.")
+    except Exception as e:
+        rospy.logerr(f"Invalid gravity vector parameter: {e}")
+        gravity_vector = (0, 0, -9.8)
+
+    gravity_publisher = GravityPublisher(path_to_urdf=urdf, start_link=start_link, end_link=end_link,
+                                         gravity_vector=gravity_vector)
     rospy.spin()
